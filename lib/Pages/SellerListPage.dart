@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-
+import 'package:teadiary/Database/addSellerDatabase.dart';
 import '../Constant/AppColor.dart';
 
 class SellerListPage extends StatefulWidget {
@@ -15,6 +15,21 @@ class _SellerListPageState extends State<SellerListPage> {
   TextEditingController nameController = TextEditingController();
   TextEditingController mobileController = TextEditingController();
   TextEditingController addressController = TextEditingController();
+
+  List<Map<String,dynamic>> addSellerDataList = [];
+
+  void _refreshData() async {
+    final data = await AddSellerDatabase.getAllSellerData();
+    setState(() {
+      addSellerDataList = data;
+    });
+  }
+
+  @override
+  void initState() {
+    _refreshData();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,8 +90,10 @@ class _SellerListPageState extends State<SellerListPage> {
                                     controller: mobileController,
                                     keyboardType: TextInputType.number,
                                     cursorColor: primeColor,
+                                    maxLength:10,
                                     decoration: InputDecoration(
                                       labelText: 'Mobile',
+                                      counterText:'',
                                       enabledBorder: UnderlineInputBorder(
                                         borderSide: BorderSide(color: primeColor,width: 2),
                                       ),
@@ -107,7 +124,26 @@ class _SellerListPageState extends State<SellerListPage> {
                         ),
                         ElevatedButton(
                             onPressed: (){
-                              Navigator.pop(context);
+                             if(addressController.text.isEmpty||mobileController.text.isEmpty||addressController.text.isEmpty){
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 SnackBar(
+                                   content: Text('Please fill all details!',style: TextStyle(color: Colors.white,fontSize: 18),),
+                                   backgroundColor: Colors.redAccent,
+                                 ),);
+                             }else{
+                               AddSellerDatabase.addSellerData(nameController.text, mobileController.text, addressController.text).whenComplete((){
+                                 Navigator.pop(context);
+                                 _refreshData();
+                                 nameController.clear();
+                                 mobileController.clear();
+                                 addressController.clear();
+                                 ScaffoldMessenger.of(context).showSnackBar(
+                                   SnackBar(
+                                     content: Text('Seller add Successfully...',style: TextStyle(color: Colors.white,fontSize: 18),),
+                                     backgroundColor: Colors.green,
+                                   ),);
+                               });
+                             }
                             },
                             style:ElevatedButton.styleFrom(
                               shape: RoundedRectangleBorder(
@@ -115,7 +151,7 @@ class _SellerListPageState extends State<SellerListPage> {
                               ),
                               backgroundColor: primeColor,
                             ),
-                            child: Text('Save',style: TextStyle(color: Colors.white,fontSize: 18),))
+                            child:Text('Save',style: TextStyle(color: Colors.white,fontSize: 18),))
                       ],
                     ),
                   )
@@ -130,11 +166,32 @@ class _SellerListPageState extends State<SellerListPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-
-        ],
-      ),
+      body: ListView.builder(
+        itemCount:  addSellerDataList.length,
+          itemBuilder: (context,index){
+          var name = addSellerDataList[index]['name'];
+          var mobile = addSellerDataList[index]['mobile'];
+          var address = addSellerDataList[index]['address'];
+        return Padding(
+          padding: const EdgeInsets.only(left: 20,right: 20,top: 15),
+          child: Card(
+            child: ListTile(
+              leading: Icon(Icons.account_circle,color: primeColor,size: 45,),
+              title: Text('Name : $name',style: TextStyle(color: primeColor,fontSize: 18,fontWeight: FontWeight.bold),),
+              subtitle: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                      width: double.infinity,
+                      child: Text('Mobile : $mobile',style: TextStyle(color: Colors.blueGrey,fontSize: 14,fontWeight: FontWeight.normal),)),
+                  SizedBox( width: double.infinity,child: Text('Address : $address',style: TextStyle(color: Colors.blueGrey,fontSize: 14,fontWeight: FontWeight.normal),)),
+                ],
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 }
